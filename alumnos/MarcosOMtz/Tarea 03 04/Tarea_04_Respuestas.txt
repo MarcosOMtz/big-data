@@ -1,0 +1,62 @@
+===== Tarea 04
+===== Marcos Olgu’n Mart’nez 
+
+
+Tenemos que limpiar el campo duraci—n de la base de UFO-Nov-Dic-2014 para poder calcular los estad’sticos solicitados (m’nimo, m‡ximo, promedio y desviaci—n est‡ndar).
+  
+
+Aqu’ el procedimiento para limpiar la ÒDuraci—nÓ.
+Separaremos la informaci—n por minutos segundos y horas y la agregaremos a una tabla para analizarlos y obtener los estad’sticos.
+
+
+cat UFO_OK.tsv | cut -d$'\t' -f5 | grep -E "[0-9]" | grep "min" | sort | sed -E "s/[-\.][0-9]*|[^0-9]|to 5|30 s|1 e//g" > duracion_tarea.txt
+
+cat UFO_OK.tsv | cut -d$'\t' -f5 | grep -E "[0-9]" | grep "sec" | sort | sed -E "s/[-\.\/][0-9]*|[^0-9]|to 1|- 6|200 m//g" | awk '{print $1/60}' >> duracion_tarea.txt
+
+cat UFO_OK.tsv | cut -d$'\t' -f5 | grep -E "[0-9]" | grep "ho" | sort | sed -E "s/[-\.][0-9]*|[^0-9]//g"| awk '{print $1*60}' >> duracion_tarea.txt
+
+
+
+==> Calculamos los estad’sticos requeridos mediante una f—rmula AWK.
+
+awk '{sum+=$1; sumsq+=$1*$1; if(min==""){min=max=$1}; if($1>max) {max=$1};if($1<min) {min=$1}; total+=$1; count+=1} END {print "mean = " total/count,"min = " min, "max = " max, "stdev = " sqrt(sumsq/NR - (sum/NR)**2);}' duracion_tarea.txt
+
+Resultado:
+mean = 9.6833 min = 0 max = 300 stdev = 23.4655
+
+
+
+==> Python
+
+python stdin.py duracion_tarea.txt 
+Promedio = 9.683297
+Desviacion estandar = 23.465490
+Maximo = 300.000000
+Minimo = 0.000000
+
+
+==> R
+cat duracion_tarea.txt | Rscript tarea4.r
+   Min. 1st Qu.  Median    Mean 3rd Qu.    Max.
+  0.000   0.500   3.000   9.683  10.000 300.000
+[1] 23.47824
+
+
+
+==> An‡lisis
+
+Despliega la informaci—n del archivo UFO_OK.tsv
+cat UFO_OK.tsv |
+
+
+Con cut podemos dividir el archivo pero por columnas.
+Donde columnas puede estar definido como campo (-f), en conjunci—n con (-d), car‡cter (-c) o bytes (-b).Corta el archivo por columnas, le indicamos que el separador entre campos es el tabulador ('\t') y le indicamos que la columna que queremos es la 5.cut -d$'\t' -f5 |grep nos permite buscar l’neas que tengan un patr—n espec’ficoBuscar filas que tengan cadenas que algœn d’gito de 0 a 9Con este c—digo baj— de 1027 a 966 l’neasgrep -E "[0-9]" |Buscamos las l’neas que tengan la cadena "minÓ$ cat UFO_OK.tsv | cut -d$'\t' -f5 | grep -E "[0-9]" | wc -l"grep "min" |
+
+
+Ordenamos de menor a mayor
+sort |SED significa stream editor . Permite editar archivos de manera autom‡tica.
+Sustituye:[-\.][0-9] = el - — el punto (.) seguido de un d’gito, desde cero hasta n veces que aparezca (eso significa el *)[^0-9] = cualquiera que no sea un d’gitoto 5 = la cadena "to 5"30 s = la cadena "30 s"1 e = la cadena "1 e"// = sustituir todo lo anterior por nadag = se utiliza para hacer que SED haga el reemplazo en todas las instancias dadas y no solo en la primera que encuentre en cada l’nea"
+
+sed -E "s/[-\.][0-9]*|[^0-9]|to 5|30 s|1 e//g" > duracion_tarea.txtEl resultado lo dividimos entre 60 mediante una f—rmula awk para transformar las cifras de segundos a minutoscat UFO_OK.tsv | cut -d$'\t' -f5 | grep -E "[0-9]" | grep "sec" | sort | sed -E "s/[-\.\/][0-9]*|[^0-9]|to 1|- 6|200 m//g" | awk '{print $1/60}' >> duracion_tarea.txtEl resultado lo multiplicamos por 60 mediante una f—rmula awk para transformar las cifras de horas a minutoscat UFO_OK.tsv | cut -d$'\t' -f5 | grep -E "[0-9]" | grep "ho" | sort | sed -E "s/[-\.][0-9]*|[^0-9]//g"| awk '{print $1*60}' >> duracion_tarea.txt
+
+

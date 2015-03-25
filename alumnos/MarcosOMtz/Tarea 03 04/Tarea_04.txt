@@ -1,0 +1,16 @@
+=== Ejercicio ===
+Realiza el script (Webscrapping) que genera la lista de urls para descargar la base de datos de GDELT.
+
+
+
+=== Tarea 04 ===
+Modificar los ejemplos de awk de promedios, m‡ximo, m’nimo y desviaci—n est‡ndar para que se calculen con varias columnas.
+ÀCu‡nto tiempo tarda cada una de las cuatro opciones?
+
+
+
+http://data.gdeltproject.org/events/index.html
+<a href="20150226.export.CSV.zip">
+Texto - (14.9MB) (MD5: 66d7801d5a79d4ed713c85e0e908b31f)
+
+

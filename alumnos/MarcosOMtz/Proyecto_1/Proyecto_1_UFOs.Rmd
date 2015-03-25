@@ -19,7 +19,7 @@ Resultado: ip-172-31-32-70
 <span style="color:blue; font-family:Trebuchet MS; font-size:11pt">Entregable 1:</span>  Script de R en donde se ejecuta el scrapping a la página web de UFOs: <http://www.nuforc.org/webreports/ndxevent.html>
 
 ```{r, eval=FALSE}
-$ parallel --nonall Rscript ufo.r --slf instancias "./Webscrapping_UFO.r"
+$ parallel --nonall Rscript ufo.r --slf instancias "./ufo.r"
 ```
 
 ```{r, eval=FALSE}
@@ -61,12 +61,18 @@ for (i in 2:(length(daily_urls)-1)){
 
 <span style="color:blue; font-family:Trebuchet MS; font-size:11pt">2.1.-</span> ¿Cuántas observaciones totales?
 ```{r, eval=FALSE}
-wc -l UFO_Proyecto.txt
+wc -l tabla.txt
+96111
 ```
 
 <span style="color:blue; font-family:Trebuchet MS; font-size:11pt">2.2.-</span> ¿Cuál es el top 5 de estados?
 ```{r, eval=FALSE}
 cat UFO_Proyecto.txt | cut -d$'\t' -f4 | sort -t $'\t' -k 1 | uniq -c | sort -t $'\t' -g | tail -5
+4326  "TX"
+4968  "WA"
+5057  "FL"
+7726  ""
+11124 "CA"
 ```
 
 <span style="color:blue; font-family:Trebuchet MS; font-size:11pt">2.3.-</span> ¿Cuál es el top 5 de estados por año?
@@ -95,7 +101,7 @@ library(dplyr)
 library(tidyr)
 
 # Extrayendo el archivo
-df <- read.delim("/Users/Marcos/big-data-test/fecha_edo.txt", na.strings = "")
+df <- read.delim("/Users/Marcos/Bases-BigData/UFO_fecha_edo.txt", na.strings = "")
 
 # Casos completos (con ciudad)
 df <- df[complete.cases(df),]
@@ -145,15 +151,98 @@ result
 cut -d$'\t' -f1,2,4 prueba.txt | cut -d' ' -f4,7 | cut -d'/' -f1 | sort | uniq -c |sort -g | tail -1
 ```
 
+Respondiendo tambien en R a esta pregunta es como sigue:
+```{r, message=FALSE, warning=FALSE}
+library(dplyr)
+library(tidyr)
+library(ggplot2)
+library(lubridate)
+
+# Previamente se crea el siguiente archivo desde la terminal:
+# cat UFO_Proyecto.txt | cut -d$'\t' -f2,4 > UFO_fecha_edo.txt
+
+df <- read.delim("/Users/Marcos/Bases-BigData/UFO_fecha_edo.txt", na.strings = "")
+
+# Nos quedamos con los que tienen registro de ciudad.
+df <- df[complete.cases(df),]
+
+# Preparando datos (registro con fecha y ciudad de avistamiento)
+df <- df                                                         %>%
+      separate(col=City, into=c("month","day","year","time"),
+               regex=" ", remove=F, extra="drop")                %>%
+      mutate(date = paste(month, day, year, sep = '/'),
+             city = Shape, 
+             date = as.Date(date, format='%m/%d/%y'))            %>%
+      select(date,city)
+
+
+# Filtramos las fechas que son mayores al 4 marzo 2015
+# Se crea una tabla de frecuencias por "date" y graficamos
+serie.date <- df                                    %>%
+              filter( date < as.Date("2015-03-04")) %>%
+              group_by(date)                        %>%
+              summarise(count = n())
+
+# Graficamos por mes
+mes <- aggregate(serie.date$count, by=list(Category=month(serie.date$date)), FUN=sum)
+
+ggplot(mes, aes(x = Category, y = x)) +
+  geom_bar(stat = "identity", fill="gold4", colour="goldenrod4") +
+  labs(y = 'Avistamientos', x = 'Mes del año') +
+  scale_x_continuous(breaks=seq(from=1, to=12, by=1))
+```
+
 <span style="color:blue; font-family:Trebuchet MS; font-size:11pt">2.6.-</span> ¿Cuál es el día de la semana con más avistamientos?
 ```{r, eval=FALSE}
 cut -d $'\t' -f2,3,4 UFO_Proyecto.txt | sed 's/"//g' | cut -d " " -f1 | sort | uniq -c | sort | sed 's/City/ /' | sed 's/Two/ /'
+```
+
+Resolviéndolo en R es:
+```{r, message=FALSE, warning=FALSE}
+dia <- aggregate(serie.date$count, by=list(Category=wday(serie.date$date)), FUN=sum)
+
+ggplot(dia, aes(x = Category, y = x)) +
+  geom_bar(stat = "identity", fill="cyan4") +
+  labs(y = 'Avistamientos', x = 'Dia de la semana') +
+  scale_x_continuous(breaks=seq(from=1, to=7, by=1))
 ```
 
 Para hacer la serie de tiempo se hace:
 ```{r, eval=FALSE}
 cat serie.csv | Rscript plot.r FL proy
 ```
+
+Resolviendo en R es:
+```{r, message=FALSE, warning=FALSE}
+ggplot(serie.date, aes(x = date, y = count)) +
+  geom_line() +
+  theme(axis.text.x = element_text(angle = 0, hjust = 1)) +
+  geom_point() +
+  geom_point(colour = 'red', size = 2)
+```
+
+```{r, message=FALSE, warning=FALSE}
+# Filtramos las fechas que son mayores al 4 marzo 2015 (¿errores?)
+# Se crea una tabla de frecuencias por "city" y "date" y graficamos
+serie.city <- df                                    %>%
+              filter( date < as.Date("2015-03-04")) %>%
+              group_by(city,date)                   %>%
+              summarise(count = n())
+
+
+top_estados <- names(head(sort(table(serie.city$city),decreasing=TRUE),10))
+top_estados_obs <- serie.city[which(serie.city$city==c(top_estados)),]
+
+
+ggplot(top_estados_obs, aes(x = date, y = count, group = city, color=city)) +
+  facet_wrap(~ city, nrow = 3) +
+  geom_line() +
+  theme(axis.text.x = element_text(angle = 0, hjust = 1)) +
+  geom_point()
+
+```
+
+
 
 
 <span style="color:green; font-family:Trebuchet MS; font-size:11pt">Aquí termina el proyecto.</span>
